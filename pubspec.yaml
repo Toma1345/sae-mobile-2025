@@ -13,12 +13,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_maps_flutter: ^2.10.1
-  google_maps_flutter_web: ^0.5.11
   supabase_flutter: ^2.0.0
-  flutter_map: ^0.14.0
-  latlong2: ^0.8.0
-  # Icônes pour iOS (Cupertino)
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.0
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
