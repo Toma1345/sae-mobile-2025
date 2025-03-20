@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:sae_mobile_2025/pages/account_page.dart';
+import 'package:sae_mobile_2025/pages/restaurant.dart';
 import 'package:sae_mobile_2025/pages/login_page.dart';
 
 Future<void> main() async {
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "IUTables'O",
-      theme: ThemeData.dark().copyWith(
+      theme: ThemeData.light().copyWith(
         primaryColor: Colors.green,
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
@@ -37,10 +37,32 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: supabase.auth.currentSession == null
-      ? const LoginPage()
-      : const AccountPage(),
+      home: FutureBuilder(
+          future: _checkAuthState(),
+          builder: (context, AsyncSnapshot<bool> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            if (snapshot.hasError) {
+              return const Scaffold(
+                body: Center(
+                  child: Text("Erreur de connexion"),
+                ),
+              );
+            }
+            return snapshot.data == true ? const RestaurantsPage() : const LoginPage();
+          },
+      ),
     );
+  }
+
+  Future<bool> _checkAuthState() async {
+    await Future.delayed(const Duration(seconds: 2));
+    return supabase.auth.currentSession != null;
   }
 }
 
