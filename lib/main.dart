@@ -3,9 +3,10 @@ import 'package:sae_mobile_2025/pages/restaurant.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sae_mobile_2025/pages/account_page.dart';
 import 'package:sae_mobile_2025/pages/login_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();await initializeDateFormatting('fr_FR', null); // 🔹 Initialise la locale
 
   await Supabase.initialize(
     url: 'https://oqtczbaqyiqszbugjxse.supabase.co',
