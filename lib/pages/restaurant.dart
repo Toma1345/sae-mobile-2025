@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'details_page.dart'; // Assure-toi d'importer la page de détails
 
 class RestaurantsPage extends StatefulWidget {
   const RestaurantsPage({super.key});
@@ -16,6 +17,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text("Liste des Restaurants")),
       body: FutureBuilder(
         future: _future,
         builder: (context, snapshot) {
@@ -29,6 +31,14 @@ class RestaurantsPageState extends State<RestaurantsPage> {
               final restaurant = restaurants[index];
               return ListTile(
                 title: Text(restaurant['name']),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailsPage(restaurantId: restaurant['id']),
+                    ),
+                  );
+                },
               );
             }),
           );

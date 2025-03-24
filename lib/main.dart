@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sae_mobile_2025/pages/restaurant.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sae_mobile_2025/pages/account_page.dart';
 import 'package:sae_mobile_2025/pages/login_page.dart';
@@ -37,9 +38,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: supabase.auth.currentSession == null
-      ? const LoginPage()
-      : const AccountPage(),
+      home: RestaurantsPage()
     );
   }
 }
