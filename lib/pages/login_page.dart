@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sae_mobile_2025/pages/home.dart';
 import 'restaurant.dart';
 import 'signup_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -29,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
             context,
           MaterialPageRoute(
-              builder: (context) => const RestaurantsPage()
+              builder: (context) => const HomePage()
           ),
         );
       }
