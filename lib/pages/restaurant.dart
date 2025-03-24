@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'details_page.dart';
 
 class RestaurantsPage extends StatefulWidget {
   const RestaurantsPage({super.key});
@@ -191,6 +192,14 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                     final isOpen = checkIfOpen(restaurant['opening_hours']);
                     return ListTile(
                       title: Text(restaurant['name']),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailsPage(restaurantId: restaurant['id']),
+                          ),
+                        );
+                      },
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
