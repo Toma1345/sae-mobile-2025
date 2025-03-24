@@ -278,8 +278,11 @@ class _DetailsPageState extends State<DetailsPage> {
                   _buildInfoCard(Icons.language, "Site Internet", restaurant['website'], isUrl: true),
                   const SizedBox(height: 16),
                 ],
-                if (restaurant['opening_hours'] != "") ...[
+                if (restaurant['opening_hours'] != null && restaurant['opening_hours'].toString().isNotEmpty) ...[
                   _buildOpeningHoursCard(restaurant['opening_hours']),
+                  const SizedBox(height: 16),
+                ] else ...[
+                  _buildInfoCard(Icons.access_time, "Horaires", "Non renseigné"),
                   const SizedBox(height: 16),
                 ],
                 Container(

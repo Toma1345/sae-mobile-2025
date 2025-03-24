@@ -39,26 +39,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: FutureBuilder(
-          future: _checkAuthState(),
-          builder: (context, AsyncSnapshot<bool> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            if (snapshot.hasError) {
-              return const Scaffold(
-                body: Center(
-                  child: Text("Erreur de connexion"),
-                ),
-              );
-            }
-            return snapshot.data == true ? const RestaurantsPage() : const LoginPage();
-          },
-      ),
+      home: LoginPage()
     );
   }
 

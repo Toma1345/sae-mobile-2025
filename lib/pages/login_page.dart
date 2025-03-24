@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sae_mobile_2025/pages/restaurant.dart';
-import 'package:sae_mobile_2025/pages/signup_page.dart';
+import 'restaurant.dart';
+import 'signup_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
