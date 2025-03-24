@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sae_mobile_2025/pages/restaurant.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:sae_mobile_2025/pages/account_page.dart';
+import 'package:sae_mobile_2025/pages/restaurant.dart';
 import 'package:sae_mobile_2025/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -39,8 +39,32 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: RestaurantsPage()
+      home: FutureBuilder(
+          future: _checkAuthState(),
+          builder: (context, AsyncSnapshot<bool> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            if (snapshot.hasError) {
+              return const Scaffold(
+                body: Center(
+                  child: Text("Erreur de connexion"),
+                ),
+              );
+            }
+            return snapshot.data == true ? const RestaurantsPage() : const LoginPage();
+          },
+      ),
     );
+  }
+
+  Future<bool> _checkAuthState() async {
+    await Future.delayed(const Duration(seconds: 2));
+    return supabase.auth.currentSession != null;
   }
 }
 
