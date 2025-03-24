@@ -27,7 +27,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
       if (res.user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Inscription réussie, veuillez vérifier votre boite mail."))
+          const SnackBar(content: Text("Inscription réussie."))
         );
         Navigator.pushReplacement(
             context,
