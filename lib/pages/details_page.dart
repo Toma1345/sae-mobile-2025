@@ -270,16 +270,19 @@ class _DetailsPageState extends State<DetailsPage> {
                   _buildInfoCard(Icons.category, "Type", restaurant['type']),
                   const SizedBox(height: 16),
                 ],
-                if (restaurant['phone'] != null) ...[
+                if (restaurant['phone'] !="") ...[
                   _buildInfoCard(Icons.phone, "Contact", restaurant['phone'], isPhone: true),
                   const SizedBox(height: 16),
                 ],
-                if (restaurant['website'] != null) ...[
+                if (restaurant['website'] != "") ...[
                   _buildInfoCard(Icons.language, "Site Internet", restaurant['website'], isUrl: true),
                   const SizedBox(height: 16),
                 ],
-                if (restaurant['opening_hours'] != null) ...[
+                if (restaurant['opening_hours'] != null && restaurant['opening_hours'].toString().isNotEmpty) ...[
                   _buildOpeningHoursCard(restaurant['opening_hours']),
+                  const SizedBox(height: 16),
+                ] else ...[
+                  _buildInfoCard(Icons.access_time, "Horaires", "Non renseigné"),
                   const SizedBox(height: 16),
                 ],
                 Container(
