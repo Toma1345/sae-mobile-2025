@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'details_page.dart';
 
 class RestaurantsPage extends StatefulWidget {
@@ -13,23 +14,52 @@ class RestaurantsPage extends StatefulWidget {
 class RestaurantsPageState extends State<RestaurantsPage> {
   final _future = Supabase.instance.client
       .from('restaurants')
-      .select('id, name, type, opening_hours');
+      .select('id, name, type, cuisine, opening_hours');
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _allRestaurants = [];
   List<dynamic> _filteredRestaurants = [];
   String? _selectedType;
   String? _selectedStatus;
+  List<String> _preferredRestaurantTypes = [];
+  List<String> _preferredCuisineTypes = [];
+  bool _isLoadingPreferences = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_filterRestaurants);
+    _loadPreferences();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPreferences() async {
+    setState(() {
+      _isLoadingPreferences = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _preferredRestaurantTypes = prefs.getStringList('preferredRestaurantTypes') ?? [];
+        _preferredCuisineTypes = prefs.getStringList('preferredCuisineTypes') ?? [];
+        _isLoadingPreferences = false;
+      });
+      _filterRestaurants();
+    } catch (e) {
+      setState(() {
+        _isLoadingPreferences = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur chargement préférences: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   void _resetFilters() {
@@ -47,6 +77,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
       _filteredRestaurants = _allRestaurants.where((restaurant) {
         final name = restaurant['name'].toString().toLowerCase();
         final type = restaurant['type'].toString();
+        final cuisine = restaurant['cuisine']?.toString() ?? '';
         final isOpen = checkIfOpen(restaurant['opening_hours']);
 
         final nameMatch = name.contains(query);
@@ -57,7 +88,14 @@ class RestaurantsPageState extends State<RestaurantsPage> {
             (_selectedStatus == 'Fermé' && isOpen == 'Fermé') ||
             (_selectedStatus == 'Non renseigné' && isOpen == null);
 
-        return nameMatch && typeMatch && statusMatch;
+        // Filtre pour les préférences
+        final restaurantTypeMatch = _preferredRestaurantTypes.isEmpty ||
+            _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase()));
+
+        final cuisineTypeMatch = _preferredCuisineTypes.isEmpty ||
+            _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase()));
+
+        return nameMatch && typeMatch && statusMatch && restaurantTypeMatch && cuisineTypeMatch;
       }).toList();
     });
   }
@@ -73,6 +111,19 @@ class RestaurantsPageState extends State<RestaurantsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Restaurants'),
+        actions: [
+          if (_isLoadingPreferences)
+            const Padding(
+              padding: EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -170,6 +221,27 @@ class RestaurantsPageState extends State<RestaurantsPage> {
               ],
             ),
           ),
+          if (_preferredRestaurantTypes.isNotEmpty || _preferredCuisineTypes.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              child: Row(
+                children: [
+                  if (_preferredRestaurantTypes.isNotEmpty)
+                    Chip(
+                      label: Text('Rest: ${_preferredRestaurantTypes.join(', ')}'),
+                      backgroundColor: Colors.green[100],
+                    ),
+                  if (_preferredCuisineTypes.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4.0),
+                      child: Chip(
+                        label: Text('Cuisine: ${_preferredCuisineTypes.join(', ')}'),
+                        backgroundColor: Colors.blue[100],
+                      ),
+                    ),
+                ],
+              ),
+            ),
           Expanded(
             child: FutureBuilder(
               future: _future,
@@ -190,32 +262,43 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                   itemBuilder: ((context, index) {
                     final restaurant = _filteredRestaurants[index];
                     final isOpen = checkIfOpen(restaurant['opening_hours']);
-                    return ListTile(
-                      title: Text(restaurant['name']),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailsPage(restaurantId: restaurant['id']),
-                          ),
-                        );
-                      },
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(restaurant['type']),
-                          Text(
-                            isOpen ?? 'Non renseigné',
-                            style: TextStyle(
-                              color: isOpen == 'Ouvert'
-                                  ? Colors.green
-                                  : (isOpen == 'Fermé'
-                                  ? Colors.red
-                                  : Colors.grey),
-                              fontWeight: FontWeight.bold,
+                    final matchesPreferences = _matchesUserPreferences(restaurant);
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      color: matchesPreferences ? Colors.green[50] : null,
+                      child: ListTile(
+                        title: Text(restaurant['name']),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetailsPage(restaurantId: restaurant['id']),
                             ),
-                          ),
-                        ],
+                          );
+                        },
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(restaurant['type']),
+                            if (restaurant['cuisine'] != null)
+                              Text('Cuisine: ${restaurant['cuisine']}'),
+                            Text(
+                              isOpen ?? 'Non renseigné',
+                              style: TextStyle(
+                                color: isOpen == 'Ouvert'
+                                    ? Colors.green
+                                    : (isOpen == 'Fermé'
+                                    ? Colors.red
+                                    : Colors.grey),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: matchesPreferences
+                            ? const Icon(Icons.favorite, color: Colors.red)
+                            : null,
                       ),
                     );
                   }),
@@ -226,6 +309,19 @@ class RestaurantsPageState extends State<RestaurantsPage> {
         ],
       ),
     );
+  }
+
+  bool _matchesUserPreferences(Map<String, dynamic> restaurant) {
+    final type = restaurant['type'].toString();
+    final cuisine = restaurant['cuisine']?.toString() ?? '';
+
+    final matchesRestaurantType = _preferredRestaurantTypes.isNotEmpty &&
+        _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase()));
+
+    final matchesCuisineType = _preferredCuisineTypes.isNotEmpty &&
+        _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase()));
+
+    return matchesRestaurantType || matchesCuisineType;
   }
 
   String? checkIfOpen(String? openingHours) {
