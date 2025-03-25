@@ -4,9 +4,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sae_mobile_2025/pages/restaurant.dart';
 import 'package:sae_mobile_2025/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sae_mobile_2025/pages/account_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();await initializeDateFormatting('fr_FR', null); // 🔹 Initialise la locale
+
+  await SharedPreferences.getInstance();
+
 
   await Supabase.initialize(
     url: 'https://oqtczbaqyiqszbugjxse.supabase.co',
@@ -39,7 +44,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: LoginPage()
+      home: AccountPage()
     );
   }
 
