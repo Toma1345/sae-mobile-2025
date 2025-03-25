@@ -20,6 +20,8 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   List<dynamic> _filteredRestaurants = [];
   String? _selectedType;
   String? _selectedStatus;
+  bool _showFavoriteTypesOnly = false;
+  bool _showFavoriteCuisinesOnly = false;
   List<String> _preferredRestaurantTypes = [];
   List<String> _preferredCuisineTypes = [];
   bool _isLoadingPreferences = false;
@@ -38,10 +40,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   }
 
   Future<void> _loadPreferences() async {
-    setState(() {
-      _isLoadingPreferences = true;
-    });
-
+    setState(() => _isLoadingPreferences = true);
     try {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
@@ -51,12 +50,10 @@ class RestaurantsPageState extends State<RestaurantsPage> {
       });
       _filterRestaurants();
     } catch (e) {
-      setState(() {
-        _isLoadingPreferences = false;
-      });
+      setState(() => _isLoadingPreferences = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur chargement préférences: ${e.toString()}')),
+          SnackBar(content: Text('Erreur chargement préférences: $e')),
         );
       }
     }
@@ -67,6 +64,8 @@ class RestaurantsPageState extends State<RestaurantsPage> {
       _searchController.clear();
       _selectedType = null;
       _selectedStatus = null;
+      _showFavoriteTypesOnly = false;
+      _showFavoriteCuisinesOnly = false;
       _filteredRestaurants = List.from(_allRestaurants);
     });
   }
@@ -80,6 +79,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
         final cuisine = restaurant['cuisine']?.toString() ?? '';
         final isOpen = checkIfOpen(restaurant['opening_hours']);
 
+        // Filtres de base
         final nameMatch = name.contains(query);
         final typeMatch = _selectedType == null || _selectedType == 'Tous' || type == _selectedType;
         final statusMatch = _selectedStatus == null ||
@@ -88,16 +88,30 @@ class RestaurantsPageState extends State<RestaurantsPage> {
             (_selectedStatus == 'Fermé' && isOpen == 'Fermé') ||
             (_selectedStatus == 'Non renseigné' && isOpen == null);
 
-        // Filtre pour les préférences
-        final restaurantTypeMatch = _preferredRestaurantTypes.isEmpty ||
-            _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase()));
+        // Filtres favoris
+        final typeFavoriteMatch = !_showFavoriteTypesOnly ||
+            (_preferredRestaurantTypes.isNotEmpty &&
+                _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase())));
 
-        final cuisineTypeMatch = _preferredCuisineTypes.isEmpty ||
-            _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase()));
+        final cuisineFavoriteMatch = !_showFavoriteCuisinesOnly ||
+            (_preferredCuisineTypes.isNotEmpty &&
+                _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase())));
 
-        return nameMatch && typeMatch && statusMatch && restaurantTypeMatch && cuisineTypeMatch;
+        return nameMatch && typeMatch && statusMatch && typeFavoriteMatch && cuisineFavoriteMatch;
       }).toList();
     });
+  }
+
+  bool _matchesTypePreferences(Map<String, dynamic> restaurant) {
+    final type = restaurant['type'].toString();
+    return _preferredRestaurantTypes.isNotEmpty &&
+        _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase()));
+  }
+
+  bool _matchesCuisinePreferences(Map<String, dynamic> restaurant) {
+    final cuisine = restaurant['cuisine']?.toString() ?? '';
+    return _preferredCuisineTypes.isNotEmpty &&
+        _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase()));
   }
 
   List<String> _getRestaurantTypes() {
@@ -221,27 +235,40 @@ class RestaurantsPageState extends State<RestaurantsPage> {
               ],
             ),
           ),
-          if (_preferredRestaurantTypes.isNotEmpty || _preferredCuisineTypes.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-              child: Row(
-                children: [
-                  if (_preferredRestaurantTypes.isNotEmpty)
-                    Chip(
-                      label: Text('Rest: ${_preferredRestaurantTypes.join(', ')}'),
-                      backgroundColor: Colors.green[100],
-                    ),
-                  if (_preferredCuisineTypes.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4.0),
-                      child: Chip(
-                        label: Text('Cuisine: ${_preferredCuisineTypes.join(', ')}'),
-                        backgroundColor: Colors.blue[100],
-                      ),
-                    ),
-                ],
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilterChip(
+                    label: const Text('Types préférés'),
+                    selected: _showFavoriteTypesOnly,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showFavoriteTypesOnly = selected;
+                        _filterRestaurants();
+                      });
+                    },
+                    selectedColor: Colors.green[100],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilterChip(
+                    label: const Text('Cuisines préférées'),
+                    selected: _showFavoriteCuisinesOnly,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showFavoriteCuisinesOnly = selected;
+                        _filterRestaurants();
+                      });
+                    },
+                    selectedColor: Colors.blue[100],
+                  ),
+                ),
+              ],
             ),
+          ),
           Expanded(
             child: FutureBuilder(
               future: _future,
@@ -262,27 +289,27 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                   itemBuilder: ((context, index) {
                     final restaurant = _filteredRestaurants[index];
                     final isOpen = checkIfOpen(restaurant['opening_hours']);
-                    final matchesPreferences = _matchesUserPreferences(restaurant);
+                    final matchesType = _matchesTypePreferences(restaurant);
+                    final matchesCuisine = _matchesCuisinePreferences(restaurant);
+
+                    Color? cardColor;
+                    if (matchesType && matchesCuisine) {
+                      cardColor = Colors.purple[50]; // Les deux préférences
+                    } else if (matchesType) {
+                      cardColor = Colors.green[50]; // Type seulement
+                    } else if (matchesCuisine) {
+                      cardColor = Colors.blue[50]; // Cuisine seulement
+                    }
 
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      color: matchesPreferences ? Colors.green[50] : null,
+                      color: cardColor,
                       child: ListTile(
                         title: Text(restaurant['name']),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DetailsPage(restaurantId: restaurant['id']),
-                            ),
-                          );
-                        },
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(restaurant['type']),
-                            if (restaurant['cuisine'] != null)
-                              Text('Cuisine: ${restaurant['cuisine']}'),
                             Text(
                               isOpen ?? 'Non renseigné',
                               style: TextStyle(
@@ -296,9 +323,14 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                             ),
                           ],
                         ),
-                        trailing: matchesPreferences
-                            ? const Icon(Icons.favorite, color: Colors.red)
-                            : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetailsPage(restaurantId: restaurant['id']),
+                            ),
+                          );
+                        },
                       ),
                     );
                   }),
@@ -309,19 +341,6 @@ class RestaurantsPageState extends State<RestaurantsPage> {
         ],
       ),
     );
-  }
-
-  bool _matchesUserPreferences(Map<String, dynamic> restaurant) {
-    final type = restaurant['type'].toString();
-    final cuisine = restaurant['cuisine']?.toString() ?? '';
-
-    final matchesRestaurantType = _preferredRestaurantTypes.isNotEmpty &&
-        _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase()));
-
-    final matchesCuisineType = _preferredCuisineTypes.isNotEmpty &&
-        _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase()));
-
-    return matchesRestaurantType || matchesCuisineType;
   }
 
   String? checkIfOpen(String? openingHours) {
@@ -352,14 +371,12 @@ class RestaurantsPageState extends State<RestaurantsPage> {
     return 'Fermé';
   }
 
-  String capitalizeFirstLetter(String s) => s[0].toUpperCase() + s.substring(1);
-
   bool isDayMatching(String currentDay, String days) {
     final daysList = [
       'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
     ];
 
-    currentDay = capitalizeFirstLetter(currentDay);
+    currentDay = currentDay[0].toUpperCase() + currentDay.substring(1);
 
     if (days.contains('-')) {
       final range = days.split('-');
@@ -377,10 +394,13 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   }
 
   bool isWithinTimeRange(String currentTime, String startTime, String endTime) {
-    final now = DateFormat('HH:mm').parse(currentTime);
-    final start = DateFormat('HH:mm').parse(startTime);
-    final end = DateFormat('HH:mm').parse(endTime);
-
-    return now.isAfter(start) && now.isBefore(end);
+    try {
+      final now = DateFormat('HH:mm').parse(currentTime);
+      final start = DateFormat('HH:mm').parse(startTime);
+      final end = DateFormat('HH:mm').parse(endTime);
+      return now.isAfter(start) && now.isBefore(end);
+    } catch (e) {
+      return false;
+    }
   }
 }
