@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:sae_mobile_2025/pages/restaurant.dart';
+import 'package:sae_mobile_2025/pages/home.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:sae_mobile_2025/pages/restaurant.dart';
 import 'package:sae_mobile_2025/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sae_mobile_2025/pages/account_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();await initializeDateFormatting('fr_FR', null); // 🔹 Initialise la locale
+
+  await SharedPreferences.getInstance();
+
 
   await Supabase.initialize(
     url: 'https://oqtczbaqyiqszbugjxse.supabase.co',
@@ -39,7 +43,26 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: LoginPage()
+      home: FutureBuilder(
+          future: _checkAuthState(),
+          builder: (context, AsyncSnapshot<bool> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            if (snapshot.hasError) {
+              return const Scaffold(
+                body: Center(
+                  child: Text("Erreur de connexion"),
+                ),
+              );
+            }
+            return snapshot.data == true ? const HomePage() : const LoginPage();
+          },
+      ),
     );
   }
 
