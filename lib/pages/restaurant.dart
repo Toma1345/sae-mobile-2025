@@ -20,6 +20,8 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   List<dynamic> _filteredRestaurants = [];
   String? _selectedType;
   String? _selectedStatus;
+  final _user = Supabase.instance.client.auth.currentUser;
+  Set<String> _favoriteRestaurantIds = {};
   List<String> _preferredRestaurantTypes = [];
   List<String> _preferredCuisineTypes = [];
   bool _isLoadingPreferences = false;
@@ -28,6 +30,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   void initState() {
     super.initState();
     _searchController.addListener(_filterRestaurants);
+    _loadFavorites();
     _loadPreferences();
   }
 
@@ -37,6 +40,62 @@ class RestaurantsPageState extends State<RestaurantsPage> {
     super.dispose();
   }
 
+  Future<void> _loadFavorites() async {
+    if (_user == null) return;
+
+    try {
+      final response = await Supabase.instance.client
+          .from('favoris')
+          .select('id_restaurant')
+          .eq('id_user', _user!.id);
+
+      if (response != null) {
+        setState(() {
+          _favoriteRestaurantIds = Set.from(
+              response.map((fav) => fav['id_restaurant'].toString())
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du chargement des favoris: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite(String restaurantId) async {
+    if (_user == null) return;
+
+    final isFavorite = _favoriteRestaurantIds.contains(restaurantId);
+
+    try {
+      if (isFavorite) {
+        await Supabase.instance.client
+            .from('favoris')
+            .delete()
+            .match({
+          'id_user': _user!.id,
+          'id_restaurant': restaurantId,
+        });
+      } else {
+        await Supabase.instance.client
+            .from('favoris')
+            .insert({
+          'id_user': _user!.id,
+          'id_restaurant': restaurantId,
+        });
+      }
+
+      setState(() {
+        if (isFavorite) {
+          _favoriteRestaurantIds.remove(restaurantId);
+        } else {
+          _favoriteRestaurantIds.add(restaurantId);
+        }
+      });
+    } catch (e) {
+      debugPrint('Erreur lors de la mise à jour des favoris: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
   Future<void> _loadPreferences() async {
     setState(() {
       _isLoadingPreferences = true;
@@ -262,6 +321,39 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                   itemBuilder: ((context, index) {
                     final restaurant = _filteredRestaurants[index];
                     final isOpen = checkIfOpen(restaurant['opening_hours']);
+                    final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
+
+                    return ListTile(
+                      title: Text(restaurant['name']),
+                      trailing: IconButton(
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : null,
+                        ),
+                        onPressed: () => _toggleFavorite(restaurant['id'].toString()),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailsPage(restaurantId: restaurant['id']),
+                          ),
+                        );
+                      },
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(restaurant['type']),
+                          Text(
+                            isOpen ?? 'Non renseigné',
+                            style: TextStyle(
+                              color: isOpen == 'Ouvert'
+                                  ? Colors.green
+                                  : (isOpen == 'Fermé'
+                                  ? Colors.red
+                                  : Colors.grey),
+                              fontWeight: FontWeight.bold,
+
                     final matchesPreferences = _matchesUserPreferences(restaurant);
 
                     return Card(
