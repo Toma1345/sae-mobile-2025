@@ -52,8 +52,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
       if (response != null) {
         setState(() {
           _favoriteRestaurantIds = Set.from(
-              response.map((fav) => fav['id_restaurant'].toString())
-          );
+              response.map((fav) => fav['id_restaurant'].toString()));
         });
       }
     } catch (e) {
@@ -96,6 +95,9 @@ class RestaurantsPageState extends State<RestaurantsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur: ${e.toString()}')),
       );
+    }
+  }
+
   Future<void> _loadPreferences() async {
     setState(() {
       _isLoadingPreferences = true;
@@ -137,7 +139,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
         final name = restaurant['name'].toString().toLowerCase();
         final type = restaurant['type'].toString();
         final cuisine = restaurant['cuisine']?.toString() ?? '';
-        final isOpen = checkIfOpen(restaurant['opening_hours']);
+        final isOpen = _checkIfOpen(restaurant['opening_hours']);
 
         final nameMatch = name.contains(query);
         final typeMatch = _selectedType == null || _selectedType == 'Tous' || type == _selectedType;
@@ -163,6 +165,83 @@ class RestaurantsPageState extends State<RestaurantsPage> {
     final types = _allRestaurants.map((r) => r['type'].toString()).toSet().toList();
     types.insert(0, 'Tous');
     return types;
+  }
+
+  bool _matchesUserPreferences(Map<String, dynamic> restaurant) {
+    final type = restaurant['type'].toString();
+    final cuisine = restaurant['cuisine']?.toString() ?? '';
+
+    final matchesRestaurantType = _preferredRestaurantTypes.isNotEmpty &&
+        _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase()));
+
+    final matchesCuisineType = _preferredCuisineTypes.isNotEmpty &&
+        _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase()));
+
+    return matchesRestaurantType || matchesCuisineType;
+  }
+
+  String? _checkIfOpen(String? openingHours) {
+    if (openingHours == null || openingHours.isEmpty) return null;
+
+    final now = DateTime.now();
+    final dayOfWeek = DateFormat('EEEE', 'fr_FR').format(now);
+    final currentTime = DateFormat('HH:mm').format(now);
+
+    for (String period in openingHours.split('|')) {
+      final parts = period.trim().split(' ');
+      final days = parts[0];
+      final timeRanges = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+      if (_isDayMatching(dayOfWeek, days)) {
+        if (timeRanges.isEmpty) return 'Ouvert';
+
+        for (String range in timeRanges.split(',')) {
+          final times = range.trim().split('-');
+          if (times.length == 2) {
+            if (_isWithinTimeRange(currentTime, times[0], times[1])) {
+              return 'Ouvert';
+            }
+          }
+        }
+      }
+    }
+    return 'Fermé';
+  }
+
+  String _capitalizeFirstLetter(String s) => s[0].toUpperCase() + s.substring(1);
+
+  bool _isDayMatching(String currentDay, String days) {
+    final daysList = [
+      'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
+    ];
+
+    currentDay = _capitalizeFirstLetter(currentDay);
+
+    if (days.contains('-')) {
+      final range = days.split('-');
+      if (range.length == 2) {
+        final startIdx = daysList.indexOf(range[0]);
+        final endIdx = daysList.indexOf(range[1]);
+        final currentIdx = daysList.indexOf(currentDay);
+
+        if (startIdx != -1 && endIdx != -1 && currentIdx != -1) {
+          return startIdx <= currentIdx && currentIdx <= endIdx;
+        }
+      }
+    }
+    return days.split(',').contains(currentDay);
+  }
+
+  bool _isWithinTimeRange(String currentTime, String startTime, String endTime) {
+    try {
+      final now = DateFormat('HH:mm').parse(currentTime);
+      final start = DateFormat('HH:mm').parse(startTime);
+      final end = DateFormat('HH:mm').parse(endTime);
+
+      return now.isAfter(start) && now.isBefore(end);
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
@@ -320,40 +399,8 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                   itemCount: _filteredRestaurants.length,
                   itemBuilder: ((context, index) {
                     final restaurant = _filteredRestaurants[index];
-                    final isOpen = checkIfOpen(restaurant['opening_hours']);
+                    final isOpen = _checkIfOpen(restaurant['opening_hours']);
                     final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
-
-                    return ListTile(
-                      title: Text(restaurant['name']),
-                      trailing: IconButton(
-                        icon: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorite ? Colors.red : null,
-                        ),
-                        onPressed: () => _toggleFavorite(restaurant['id'].toString()),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailsPage(restaurantId: restaurant['id']),
-                          ),
-                        );
-                      },
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(restaurant['type']),
-                          Text(
-                            isOpen ?? 'Non renseigné',
-                            style: TextStyle(
-                              color: isOpen == 'Ouvert'
-                                  ? Colors.green
-                                  : (isOpen == 'Fermé'
-                                  ? Colors.red
-                                  : Colors.grey),
-                              fontWeight: FontWeight.bold,
-
                     final matchesPreferences = _matchesUserPreferences(restaurant);
 
                     return Card(
@@ -361,6 +408,13 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                       color: matchesPreferences ? Colors.green[50] : null,
                       child: ListTile(
                         title: Text(restaurant['name']),
+                        trailing: IconButton(
+                          icon: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: isFavorite ? Colors.red : null,
+                          ),
+                          onPressed: () => _toggleFavorite(restaurant['id'].toString()),
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -388,9 +442,6 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                             ),
                           ],
                         ),
-                        trailing: matchesPreferences
-                            ? const Icon(Icons.favorite, color: Colors.red)
-                            : null,
                       ),
                     );
                   }),
@@ -401,78 +452,5 @@ class RestaurantsPageState extends State<RestaurantsPage> {
         ],
       ),
     );
-  }
-
-  bool _matchesUserPreferences(Map<String, dynamic> restaurant) {
-    final type = restaurant['type'].toString();
-    final cuisine = restaurant['cuisine']?.toString() ?? '';
-
-    final matchesRestaurantType = _preferredRestaurantTypes.isNotEmpty &&
-        _preferredRestaurantTypes.any((pref) => type.toLowerCase().contains(pref.toLowerCase()));
-
-    final matchesCuisineType = _preferredCuisineTypes.isNotEmpty &&
-        _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase()));
-
-    return matchesRestaurantType || matchesCuisineType;
-  }
-
-  String? checkIfOpen(String? openingHours) {
-    if (openingHours == null || openingHours.isEmpty) return null;
-
-    final now = DateTime.now();
-    final dayOfWeek = DateFormat('EEEE', 'fr_FR').format(now);
-    final currentTime = DateFormat('HH:mm').format(now);
-
-    for (String period in openingHours.split('|')) {
-      final parts = period.trim().split(' ');
-      final days = parts[0];
-      final timeRanges = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-
-      if (isDayMatching(dayOfWeek, days)) {
-        if (timeRanges.isEmpty) return 'Ouvert';
-
-        for (String range in timeRanges.split(',')) {
-          final times = range.trim().split('-');
-          if (times.length == 2) {
-            if (isWithinTimeRange(currentTime, times[0], times[1])) {
-              return 'Ouvert';
-            }
-          }
-        }
-      }
-    }
-    return 'Fermé';
-  }
-
-  String capitalizeFirstLetter(String s) => s[0].toUpperCase() + s.substring(1);
-
-  bool isDayMatching(String currentDay, String days) {
-    final daysList = [
-      'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
-    ];
-
-    currentDay = capitalizeFirstLetter(currentDay);
-
-    if (days.contains('-')) {
-      final range = days.split('-');
-      if (range.length == 2) {
-        final startIdx = daysList.indexOf(range[0]);
-        final endIdx = daysList.indexOf(range[1]);
-        final currentIdx = daysList.indexOf(currentDay);
-
-        if (startIdx != -1 && endIdx != -1 && currentIdx != -1) {
-          return startIdx <= currentIdx && currentIdx <= endIdx;
-        }
-      }
-    }
-    return days.split(',').contains(currentDay);
-  }
-
-  bool isWithinTimeRange(String currentTime, String startTime, String endTime) {
-    final now = DateFormat('HH:mm').parse(currentTime);
-    final start = DateFormat('HH:mm').parse(startTime);
-    final end = DateFormat('HH:mm').parse(endTime);
-
-    return now.isAfter(start) && now.isBefore(end);
   }
 }
