@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sae_mobile_2025/pages/ajout_avis_form.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -16,11 +17,13 @@ class DetailsPage extends StatefulWidget {
 class _DetailsPageState extends State<DetailsPage> {
   late Future<Map<String, dynamic>?> _restaurantFuture;
   final MapController _mapController = MapController();
+  late Future<List<Map<String, dynamic>>> _avisFuture;
 
   @override
   void initState() {
     super.initState();
     _restaurantFuture = _fetchRestaurant();
+    _avisFuture = _fetchAvis();
   }
 
   Future<Map<String, dynamic>?> _fetchRestaurant() async {
@@ -201,6 +204,60 @@ class _DetailsPageState extends State<DetailsPage> {
     );
   }
 
+  Future<List<Map<String, dynamic>>> _fetchAvis() async {
+    final response = await Supabase.instance.client
+        .from('avis')
+        .select('''
+        *
+        ''')
+        .eq('id_resto', widget.restaurantId)
+        .order('created_at', ascending: false);
+    debugPrint('Résultat de la requête avis: $response');
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Widget _buildAvisCard(Map<String, dynamic> avis) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 20,
+                  child: Icon(Icons.person_2_rounded),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  avis['id_user'] ?? 'Anonyme',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 20),
+                    Text(' ${avis['note']}.0'),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(avis['comment']),
+            const SizedBox(height: 8),
+            Text(
+              '${DateTime.parse(avis['created_at']).day}/${DateTime.parse(avis['created_at']).month}/${DateTime.parse(avis['created_at']).year}',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -232,7 +289,6 @@ class _DetailsPageState extends State<DetailsPage> {
         centerTitle: true,
         backgroundColor: Colors.brown.shade800,
         elevation: 4.0,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _restaurantFuture,
@@ -357,6 +413,69 @@ class _DetailsPageState extends State<DetailsPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Avis',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.brown,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _avisFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+
+                          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Text(
+                                'Aucun avis pour ce restaurant',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            );
+                          }
+
+                          return Column(
+                            children: snapshot.data!.map((avis) => _buildAvisCard(avis)).toList(),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown.shade800,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AjoutAvisForm(restaurantId: restaurant['id'].toString()),
+                      ),
+                    ).then((_) {
+                      setState(() {
+                        _avisFuture = _fetchAvis();
+                      });
+                    });
+                  },
+                  child: const Text('Ajouter un avis'),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           );
