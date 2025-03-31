@@ -120,6 +120,14 @@ class RestaurantsPageState extends State<RestaurantsPage> {
     return types;
   }
 
+  String _formatCuisine(String cuisine) {
+    String cleaned = cuisine
+        .replaceAll('[', '')
+        .replaceAll(']', '')
+        .replaceAll("'", "");
+    return cleaned.split(',').map((s) => s.trim()).join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -309,16 +317,19 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(restaurant['type']),
+                            Row(
+                              children: [
+                                Text(restaurant['type'] ?? 'Type non spécifié'),
+                                const SizedBox(width: 8),
+                              ],
+                            ),
                             Text(
-                              isOpen ?? 'Non renseigné',
+                              restaurant['cuisine'] != null
+                                  ? _formatCuisine(restaurant['cuisine'])
+                                  : '',
                               style: TextStyle(
-                                color: isOpen == 'Ouvert'
-                                    ? Colors.green
-                                    : (isOpen == 'Fermé'
-                                    ? Colors.red
-                                    : Colors.grey),
-                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[600],
+                                fontSize: 12,
                               ),
                             ),
                           ],
