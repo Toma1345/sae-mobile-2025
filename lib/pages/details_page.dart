@@ -263,7 +263,6 @@ class _DetailsPageState extends State<DetailsPage> {
         ''')
         .eq('id_resto', widget.restaurantId)
         .order('created_at', ascending: false);
-    debugPrint('Résultat de la requête avis: $response');
     return List<Map<String, dynamic>>.from(response);
   }
 
