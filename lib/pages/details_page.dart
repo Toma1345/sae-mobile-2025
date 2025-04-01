@@ -18,12 +18,65 @@ class _DetailsPageState extends State<DetailsPage> {
   late Future<Map<String, dynamic>?> _restaurantFuture;
   final MapController _mapController = MapController();
   late Future<List<Map<String, dynamic>>> _avisFuture;
+  bool _isFavorite = false;
+  final _user = Supabase.instance.client.auth.currentUser;
 
   @override
   void initState() {
     super.initState();
     _restaurantFuture = _fetchRestaurant();
     _avisFuture = _fetchAvis();
+    _checkIfFavorite();
+  }
+
+  Future<void> _checkIfFavorite() async {
+    if (_user == null) return;
+
+    try {
+      final response = await Supabase.instance.client
+          .from('favoris')
+          .select()
+          .eq('id_user', _user!.id)
+          .eq('id_restaurant', widget.restaurantId);
+
+      setState(() {
+        _isFavorite = response.isNotEmpty;
+      });
+    } catch (e) {
+      debugPrint('Erreur lors de la vérification des favoris: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_user == null) return;
+
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+
+    try {
+      if (_isFavorite) {
+        await Supabase.instance.client
+            .from('favoris')
+            .insert({
+          'id_user': _user!.id,
+          'id_restaurant': widget.restaurantId,
+        });
+      } else {
+        await Supabase.instance.client
+            .from('favoris')
+            .delete()
+            .match({
+          'id_user': _user!.id,
+          'id_restaurant': widget.restaurantId,
+        });
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de la mise à jour des favoris: $e');
+      setState(() {
+        _isFavorite = !_isFavorite;
+      });
+    }
   }
 
   Future<Map<String, dynamic>?> _fetchRestaurant() async {
@@ -35,7 +88,6 @@ class _DetailsPageState extends State<DetailsPage> {
     return response;
   }
 
-  // Fonction pour ouvrir les URLs
   Future<void> _launchUrl(String url) async {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'https://$url';
@@ -46,7 +98,6 @@ class _DetailsPageState extends State<DetailsPage> {
     }
   }
 
-  // Fonction pour composer un numéro de téléphone
   Future<void> _callPhoneNumber(String phoneNumber) async {
     final Uri uri = Uri.parse('tel:$phoneNumber');
     if (!await launchUrl(uri)) {
@@ -267,13 +318,29 @@ class _DetailsPageState extends State<DetailsPage> {
           future: _restaurantFuture,
           builder: (context, snapshot) {
             if (snapshot.hasData && snapshot.data != null) {
-              return Text(
-                "Détails - ${snapshot.data!['name']}",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Détails - ${snapshot.data!['name']}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: _isFavorite ? Colors.red : Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: _toggleFavorite,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               );
             }
             return const Text(
