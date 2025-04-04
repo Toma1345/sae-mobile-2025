@@ -157,7 +157,7 @@ class _AjoutAvisFormState extends State<AjoutAvisForm> {
                   ),
                   maxLines: 5,
                   validator: FormBuilderValidators.compose([
-                    FormBuilderValidators.required(),
+                    FormBuilderValidators.minLength(0),
                     FormBuilderValidators.maxLength(500),
                   ]),
                 ),
