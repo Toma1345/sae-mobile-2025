@@ -460,7 +460,6 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                     final matchesType = _matchesTypePreferences(restaurant);
                     final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
                     final matchesCuisine = _matchesCuisinePreferences(restaurant);
-                    final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
 
 
                     Color? cardColor;
@@ -522,6 +521,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                               ),
                             ),
                           ],
+                        ),
                       ),
                     );
                   }),
