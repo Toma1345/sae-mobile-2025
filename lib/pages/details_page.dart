@@ -18,6 +18,7 @@ class _DetailsPageState extends State<DetailsPage> {
   late Future<Map<String, dynamic>?> _restaurantFuture;
   final MapController _mapController = MapController();
   late Future<List<Map<String, dynamic>>> _avisFuture;
+  late Future<double?> _noteMoyenneFuture;
   bool _isFavorite = false;
   final _user = Supabase.instance.client.auth.currentUser;
 
@@ -27,6 +28,7 @@ class _DetailsPageState extends State<DetailsPage> {
     _restaurantFuture = _fetchRestaurant();
     _avisFuture = _fetchAvis();
     _checkIfFavorite();
+    _noteMoyenneFuture = _fetchNoteMoyenne();
   }
 
   Future<void> _checkIfFavorite() async {
@@ -266,7 +268,32 @@ class _DetailsPageState extends State<DetailsPage> {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  Future<void> _deleteAvis(int avisId) async {
+    try {
+      await Supabase.instance.client.from('avis').delete().eq('id', avisId);
+      setState(() {
+        _avisFuture = _fetchAvis();
+      });
+    } catch (e) {
+      debugPrint('Erreur lors de la suppression de l\'avis $e');
+    }
+  }
+
+  Future<double?> _fetchNoteMoyenne() async {
+    final response = await Supabase.instance.client
+        .from('avis')
+        .select("note")
+        .eq("id_resto", widget.restaurantId);
+
+    if (response.isEmpty) return null;
+    final notes = response.map<double>((avis) => (avis['note'] as num).toDouble()).toList();
+    final moyenne = notes.reduce((a, b) => a + b) / notes.length;
+    return moyenne;
+  }
+
   Widget _buildAvisCard(Map<String, dynamic> avis) {
+    final bool userConnect = _user != null && avis['id_user'] == _user.id;
+    List<String> photoUrls = List<String>.from(avis['images'] ?? []);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -282,10 +309,15 @@ class _DetailsPageState extends State<DetailsPage> {
                   child: Icon(Icons.person_2_rounded),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  avis['id_user'] ?? 'Anonyme',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    avis['id_user'] ?? 'Anonyme',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
+
                 const Spacer(),
                 Row(
                   children: [
@@ -293,11 +325,37 @@ class _DetailsPageState extends State<DetailsPage> {
                     Text(' ${avis['note']}.0'),
                   ],
                 ),
+                if(userConnect) ... [
+                  const SizedBox(width:8),
+                  IconButton(
+                    icon: Icon(Icons.delete_forever_rounded, color: Colors.red,),
+                    onPressed: () => _deleteAvis(avis['id']),
+                  ),
+                ]
               ],
             ),
             const SizedBox(height: 8),
-            Text(avis['comment']),
+            Text(avis['comment'] ?? ""),
             const SizedBox(height: 8),
+            if (photoUrls.isNotEmpty) ...[
+              const SizedBox(height: 8,),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: photoUrls.map((url) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      url,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+            const SizedBox(height: 8,),
             Text(
               '${DateTime.parse(avis['created_at']).day}/${DateTime.parse(avis['created_at']).month}/${DateTime.parse(avis['created_at']).year}',
               style: TextStyle(color: Colors.grey[600], fontSize: 12),
@@ -495,6 +553,37 @@ class _DetailsPageState extends State<DetailsPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      FutureBuilder<double?>(
+                        future: _noteMoyenneFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          }
+
+                          if (snapshot.hasError || !snapshot.hasData) {
+                            return const Text(
+                              'Note moyenne : Non disponible',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey
+                              ),
+                            );
+                          }
+                          return Row(
+                            children: [
+                              const Icon(
+                                  Icons.star, color: Colors.amber, size: 20),
+                              Text(' ${snapshot.data!.toStringAsFixed(1)} / 5',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                       FutureBuilder<List<Map<String, dynamic>>>(
                         future: _avisFuture,
                         builder: (context, snapshot) {
@@ -536,6 +625,7 @@ class _DetailsPageState extends State<DetailsPage> {
                     ).then((_) {
                       setState(() {
                         _avisFuture = _fetchAvis();
+                        _noteMoyenneFuture = _fetchNoteMoyenne();
                       });
                     });
                   },
