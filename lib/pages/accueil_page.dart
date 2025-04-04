@@ -205,6 +205,7 @@ class _AccueilPageState extends State<AccueilPage> {
                     width: 100,
                     height: 60,
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.location_pin, color: Colors.red, size: 40),
                         Container(
@@ -215,6 +216,8 @@ class _AccueilPageState extends State<AccueilPage> {
                           ),
                           child: Text(
                             restaurant['name'] ?? 'Nom inconnu',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

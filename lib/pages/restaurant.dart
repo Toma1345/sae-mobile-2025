@@ -472,6 +472,17 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Text(
+                              isOpen ?? 'Non renseigné',
+                              style: TextStyle(
+                                color: isOpen == 'Ouvert'
+                                    ? Colors.green
+                                    : (isOpen == 'Fermé'
+                                    ? Colors.red
+                                    : Colors.grey),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             Row(
                               children: [
                                 Text(restaurant['type'] ?? 'Type non spécifié'),
