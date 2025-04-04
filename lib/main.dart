@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sae_mobile_2025/pages/account_page.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();await initializeDateFormatting('fr_FR', null); // 🔹 Initialise la locale
+  WidgetsFlutterBinding.ensureInitialized();await initializeDateFormatting('fr_FR', null); // Initialise la locale
 
   await SharedPreferences.getInstance();
 

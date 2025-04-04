@@ -26,6 +26,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
   # Linter pour encourager les bonnes pratiques de codage
   flutter_lints: ^5.0.0
