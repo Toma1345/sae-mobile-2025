@@ -460,6 +460,8 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                     final matchesType = _matchesTypePreferences(restaurant);
                     final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
                     final matchesCuisine = _matchesCuisinePreferences(restaurant);
+                    final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
+
 
                     Color? cardColor;
                     if (matchesType && matchesCuisine) {
@@ -477,7 +479,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                         title: Text(restaurant['name']),
                         trailing: IconButton(
                           icon: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            isFavorite? Icons.favorite_border : Icons.favorite,
                             color: isFavorite ? Colors.red : null,
                           ),
                           onPressed: () => _toggleFavorite(restaurant['id'].toString()),
@@ -509,7 +511,6 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                               ),
                             ),
                           ],
-                        )
                       ),
                     );
                   }),
