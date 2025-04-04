@@ -437,6 +437,8 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                     final isOpen = checkIfOpen(restaurant['opening_hours']);
                     final matchesType = _matchesTypePreferences(restaurant);
                     final matchesCuisine = _matchesCuisinePreferences(restaurant);
+                    final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
+
 
                     Color? cardColor;
                     if (matchesType && matchesCuisine) {
@@ -454,7 +456,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                         title: Text(restaurant['name']),
                         trailing: IconButton(
                           icon: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            isFavorite? Icons.favorite_border : Icons.favorite,
                             color: isFavorite ? Colors.red : null,
                           ),
                           onPressed: () => _toggleFavorite(restaurant['id'].toString()),
@@ -487,14 +489,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                             ),
                           ],
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DetailsPage(restaurantId: restaurant['id']),
-                            ),
-                          );
-                        },
+
                       ),
                     );
                   }),
