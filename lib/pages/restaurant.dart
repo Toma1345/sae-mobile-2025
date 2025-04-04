@@ -22,6 +22,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   String? _selectedStatus;
   bool _showFavoriteTypesOnly = false;
   bool _showFavoriteCuisinesOnly = false;
+  bool _showFavoritesOnly = false;
   final _user = Supabase.instance.client.auth.currentUser;
   Set<String> _favoriteRestaurantIds = {};
   List<String> _preferredRestaurantTypes = [];
@@ -127,6 +128,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
       _selectedStatus = null;
       _showFavoriteTypesOnly = false;
       _showFavoriteCuisinesOnly = false;
+      _showFavoritesOnly = false;
       _filteredRestaurants = List.from(_allRestaurants);
     });
   }
@@ -139,6 +141,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
         final type = restaurant['type'].toString();
         final cuisine = restaurant['cuisine']?.toString() ?? '';
         final isOpen = _checkIfOpen(restaurant['opening_hours']);
+        final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
 
         // Filtres de base
         final nameMatch = name.contains(query);
@@ -158,7 +161,9 @@ class RestaurantsPageState extends State<RestaurantsPage> {
             (_preferredCuisineTypes.isNotEmpty &&
                 _preferredCuisineTypes.any((pref) => cuisine.toLowerCase().contains(pref.toLowerCase())));
 
-        return nameMatch && typeMatch && statusMatch && typeFavoriteMatch && cuisineFavoriteMatch;
+        final favoritesMatch = !_showFavoritesOnly || isFavorite;
+
+        return nameMatch && typeMatch && statusMatch && typeFavoriteMatch && cuisineFavoriteMatch && favoritesMatch;
       }).toList();
     });
   }
@@ -412,6 +417,23 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                     selectedColor: Colors.blue[100],
                   ),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilterChip(
+                    label: const Text('Favoris'),
+                    selected: _showFavoritesOnly,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showFavoritesOnly = selected;
+                        _filterRestaurants();
+                      });
+                    },
+                    selectedColor: Colors.red[100],
+                    avatar: _showFavoritesOnly
+                        ? const Icon(Icons.favorite, size: 16, color: Colors.red)
+                        : const Icon(Icons.favorite_border, size: 16),
+                  ),
+                ),
               ],
             ),
           ),
@@ -436,6 +458,7 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                     final restaurant = _filteredRestaurants[index];
                     final isOpen = checkIfOpen(restaurant['opening_hours']);
                     final matchesType = _matchesTypePreferences(restaurant);
+                    final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
                     final matchesCuisine = _matchesCuisinePreferences(restaurant);
                     final isFavorite = _favoriteRestaurantIds.contains(restaurant['id'].toString());
 
@@ -499,8 +522,6 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                               ),
                             ),
                           ],
-                        ),
-
                       ),
                     );
                   }),
