@@ -293,6 +293,7 @@ class _DetailsPageState extends State<DetailsPage> {
 
   Widget _buildAvisCard(Map<String, dynamic> avis) {
     final bool userConnect = _user != null && avis['id_user'] == _user.id;
+    List<String> photoUrls = List<String>.from(avis['images'] ?? []);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -308,10 +309,15 @@ class _DetailsPageState extends State<DetailsPage> {
                   child: Icon(Icons.person_2_rounded),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  avis['id_user'] ?? 'Anonyme',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    avis['id_user'] ?? 'Anonyme',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
+
                 const Spacer(),
                 Row(
                   children: [
@@ -331,6 +337,25 @@ class _DetailsPageState extends State<DetailsPage> {
             const SizedBox(height: 8),
             Text(avis['comment'] ?? ""),
             const SizedBox(height: 8),
+            if (photoUrls.isNotEmpty) ...[
+              const SizedBox(height: 8,),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: photoUrls.map((url) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      url,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+            const SizedBox(height: 8,),
             Text(
               '${DateTime.parse(avis['created_at']).day}/${DateTime.parse(avis['created_at']).month}/${DateTime.parse(avis['created_at']).year}',
               style: TextStyle(color: Colors.grey[600], fontSize: 12),
