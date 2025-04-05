@@ -122,7 +122,14 @@ class _AjoutAvisFormState extends State<AjoutAvisForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajouter un avis'),
+        backgroundColor: Color(0xFFC9A66B),
+        title: const Text(
+          'Ajouter un avis',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -134,9 +141,23 @@ class _AjoutAvisFormState extends State<AjoutAvisForm> {
               children: [
                 FormBuilderDropdown(
                   name: 'Note',
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Note',
-                    border: OutlineInputBorder(),
+                    labelStyle: const TextStyle(color: Color(0xFF462009)),
+                    filled: true,
+                    fillColor: const Color(0xFFF1F1F1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF462009), width: 2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF3498DB), width: 2),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF462009), width: 2),
+                    ),
                   ),
                   items: List.generate(5, (index) => index + 1)
                       .map((note) => DropdownMenuItem(
@@ -151,9 +172,23 @@ class _AjoutAvisFormState extends State<AjoutAvisForm> {
                 const SizedBox(height: 20),
                 FormBuilderTextField(
                   name: 'Commentaire',
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Commentaire',
-                    border: OutlineInputBorder(),
+                    labelStyle: const TextStyle(color: Color(0xFF462009)),
+                    filled: true,
+                    fillColor: const Color(0xFFF1F1F1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF462009), width: 2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF3498DB), width: 2),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF462009), width: 2),
+                    ),
                   ),
                   maxLines: 5,
                   validator: FormBuilderValidators.compose([

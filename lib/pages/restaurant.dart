@@ -275,17 +275,21 @@ class RestaurantsPageState extends State<RestaurantsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Restaurants'),
+        backgroundColor: Color(0xFFC9A66B),
+        title: const Text(
+            'Restaurants',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+        ),
         actions: [
           if (_isLoadingPreferences)
-            const Padding(
-              padding: EdgeInsets.only(right: 16.0),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+            const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2,),
               ),
             ),
         ],
@@ -301,6 +305,20 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Rechercher un restaurant...',
+                      filled: true,
+                      fillColor: const Color(0xFFF1F1F1),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF462009), width: 2),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF3498DB), width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF462009), width: 2),
+                      ),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -308,9 +326,6 @@ class RestaurantsPageState extends State<RestaurantsPage> {
                         onPressed: _resetFilters,
                       )
                           : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
                     ),
                   ),
                 ),

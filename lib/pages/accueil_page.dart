@@ -374,7 +374,7 @@ class _AccueilPageState extends State<AccueilPage> {
         children: [
           const SizedBox(height: 16),
           const Text(
-            'Restaurants ouverts qui pourraient vous plaire:',
+            'Restaurants ouverts qui pourraient vous plaire :',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           _buildMap(),

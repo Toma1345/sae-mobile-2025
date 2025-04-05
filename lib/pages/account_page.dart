@@ -192,7 +192,14 @@ class _AccountPageState extends State<AccountPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mon compte"),
+        backgroundColor: Color(0xFFC9A66B),
+        title: const Text(
+          "Mon compte",
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           if (_isSaving)
             const Padding(
@@ -217,45 +224,53 @@ class _AccountPageState extends State<AccountPage> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-
             // Section Types de restaurants
             _buildPreferenceSection(
               title: "Types de restaurants favoris (max 2)",
               selected: _selectedRestaurantTypes,
               allOptions: _restaurantTypes,
               onToggle: _toggleRestaurantType,
+              selectedColor: Colors.green[50]!,
             ),
-
             const SizedBox(height: 24),
-
             // Section Types de cuisines
             _buildPreferenceSection(
               title: "Types de cuisines favorites (max 3)",
               selected: _selectedCuisineTypes,
               allOptions: _cuisineTypes,
               onToggle: _toggleCuisineType,
+              selectedColor: Colors.blue[50]!,
             ),
-
             const SizedBox(height: 32),
-
             Center(
               child: ElevatedButton(
                 onPressed: _savePreferences,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(200, 50),
+                  backgroundColor: Color(0xFF7E1A21),
+                  foregroundColor: Color(0xFFEDE7E0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  textStyle: const TextStyle(fontSize: 16),
                 ),
                 child: const Text('Enregistrer les préférences'),
               ),
             ),
-
             const SizedBox(height: 16),
-
             Center(
               child: TextButton(
                 onPressed: _signOut,
+                style: TextButton.styleFrom(
+                  foregroundColor: Color(0xFF7E1A21), textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
                 child: const Text(
                   "Se déconnecter",
-                  style: TextStyle(color: Colors.red),
                 ),
               ),
             ),
@@ -270,6 +285,7 @@ class _AccountPageState extends State<AccountPage> {
     required List<String> selected,
     required List<String> allOptions,
     required Function(String) onToggle,
+    required Color selectedColor,
   }) {
     return Card(
       elevation: 2,
@@ -288,9 +304,7 @@ class _AccountPageState extends State<AccountPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 8),
-
             if (selected.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -299,7 +313,7 @@ class _AccountPageState extends State<AccountPage> {
                   runSpacing: 4,
                   children: selected.map((type) => Chip(
                     label: Text(type),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    backgroundColor: selectedColor,
                     deleteIcon: const Icon(Icons.close, size: 16),
                     onDeleted: () => onToggle(type),
                   )).toList(),
@@ -315,6 +329,7 @@ class _AccountPageState extends State<AccountPage> {
                 label: Text(type),
                 selected: selected.contains(type),
                 onSelected: (_) => onToggle(type),
+                selectedColor: selectedColor,
                 showCheckmark: false,
               )).toList(),
             ),
