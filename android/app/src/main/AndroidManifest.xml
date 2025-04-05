@@ -8,7 +8,7 @@
     <uses-feature android:name="android.hardware.location.network"/>
 
     <application
-        android:label="sae_mobile_2025"
+        android:label="IUTables'O"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

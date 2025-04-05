@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sae_mobile_2025/pages/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sae_mobile_2025/pages/account_page.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();await initializeDateFormatting('fr_FR', null); // Initialise la locale
@@ -29,18 +29,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "IUTables'O",
-      theme: ThemeData.light().copyWith(
-        primaryColor: Colors.green,
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.green,
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.green,
-          ),
+      theme: ThemeData(
+        fontFamily: 'Franklin Gothic Medium',
+        scaffoldBackgroundColor: Color(0xFFEDE7E0),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Colors.black),
         ),
       ),
       home: FutureBuilder(
